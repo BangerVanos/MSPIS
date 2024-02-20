@@ -1,5 +1,6 @@
 from typing import Literal
 from dataclasses import dataclass, field
+import copy
 
 
 class BinaryNumber:
@@ -198,29 +199,29 @@ class ArithmeticPipeline:
 
         self._number_bit_amount: int = number_bit_amount
     
-    def tact(self) -> None:
-        if (not any([level.is_busy for level in self._levels.values()]) 
-              and not self._vector_1 and not self._vector_2):            
-            self._become_free()
-            return
-        if (not self._levels[0].is_busy
-            and self._vector_1 and self._vector_2):
-            self._add_task()
-        self._level_steps()
-        if self._tacts_done and not self._levels[self._levels_amount - 1].is_busy:
-            self._move_pipeline()                
+    def tact(self) -> None:        
+        self._add_task()        
         if self._levels[self._levels_amount - 1].work_result:
             self._save_level_result(self._levels_amount - 1)                                       
-            self._free_level(self._levels_amount - 1)                                                                      
+            self._free_level(self._levels_amount - 1)            
+        if (not any([level.is_busy for level in self._levels.values()]) 
+            and not self._vector_1 and not self._vector_2):            
+            self._become_free()
+            return
+        elif self._tacts_done and not self._levels[self._levels_amount - 1].is_busy:
+            self._move_pipeline()
+        self._level_steps()                                                                              
         self._tacts_done += 1    
     
     def _add_task(self) -> None:
-        self._last_pair_inserted_index += 1
-        nearest_level = self._levels[0]        
-        multiplicand = BinaryNumber(self._vector_1.pop(), self._number_bit_amount)
-        multiplier = BinaryNumber(self._vector_2.pop(), self._number_bit_amount)
-        self._pair_indexes[0] = self._last_pair_inserted_index
-        nearest_level.operator = BinaryMultiplicator(multiplicand, multiplier)
+        if (not self._levels[0].is_busy
+            and self._vector_1 and self._vector_2):
+            self._last_pair_inserted_index += 1
+            nearest_level = self._levels[0]        
+            multiplicand = BinaryNumber(self._vector_1.pop(), self._number_bit_amount)
+            multiplier = BinaryNumber(self._vector_2.pop(), self._number_bit_amount)
+            self._pair_indexes[0] = self._last_pair_inserted_index
+            nearest_level.operator = BinaryMultiplicator(multiplicand, multiplier)
 
     def _level_steps(self) -> None:
         for pipeline_level in self._levels.values():
@@ -238,12 +239,13 @@ class ArithmeticPipeline:
                                                          
         for index in range(first_busy_level + 1, self._levels_amount):                                                   
                 self._levels[index].operator, previous_operator = previous_operator, self._levels[index].operator
-                self._pair_indexes[index], previous_pair_index = previous_pair_index, self._pair_indexes[index]                    
+                self._pair_indexes[index], previous_pair_index = previous_pair_index, self._pair_indexes[index]
+        self._add_task()                    
         
     def _save_level_result(self, index) -> None:
         free_level = self._levels[index]
-        work_result = free_level.work_result.decimal
-        self._result_vector.append(work_result)
+        work_result = free_level.work_result.decimal        
+        self._result_vector.append(work_result)        
     
     def _free_level(self, index) -> None:
         free_level = self._levels[index]          

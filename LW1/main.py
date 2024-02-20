@@ -18,12 +18,13 @@ def test_multiplication():
 
 def test_pipeline():
     configs = Configs()
-    pipeline = ArithmeticPipeline([1, 3, 5], [7, 9, 11],
+    pipeline = ArithmeticPipeline([1, 3, 5, 10, 21, 34, 20], [7, 9, 11, 56, 7, 2, 10],
                                   configs.pipeline_levels_amount,
                                   configs.input_numbers_digit_amount)
     while pipeline.is_busy:
         print(pipeline)
         pipeline.tact()
+    print(pipeline)
 
 
 if __name__ == '__main__':
