@@ -124,9 +124,8 @@ class BinaryMultiplicator:
                                      self._multiplicand)[self._multiplier.vector[-(self._shifts_amount + 1)]]            
             self._partial_sum = self._partial_sum + self._partial_product
             self._shifts_amount += 1
-            self._multiplicand = self._multiplicand << 1                        
-        else:
-            self._is_done = True
+            self._multiplicand = self._multiplicand << 1
+        self._is_done = True if self._shifts_amount >= self._needed_shifts else False       
          
     @property
     def is_done(self) -> bool:
@@ -167,14 +166,12 @@ class ArithmeticPipelineLevel:
         self._work_result = None
     
     def make_step(self):
-        if self._operator:
-            if not self._operator.result:
-                self._operator.make_step()
-            else:
-                self._work_result = self._operator.result                
+        if self._operator and not self._operator.result:
+            self._operator.make_step()
+            self._work_result = self._operator.result                                            
     
     @property
-    def is_busy(self):
+    def is_busy(self):        
         return self._is_busy
     
     @property
@@ -209,14 +206,16 @@ class ArithmeticPipeline:
 
         self._number_bit_amount: int = number_bit_amount
     
-    def tact(self) -> None:
-        if (not any([level.is_busy for level in self._levels.values()]) 
-            and not self._vector_1 and not self._vector_2):                        
+    def tact(self) -> None:                
+        if self._pipeline_can_stop_working():                                    
             self._become_free()
-            return       
-        self._move_pipeline()
-        self._level_steps()                                                                              
-        self._tacts_done += 1    
+            return               
+        self._pipeline_cycle()                                                                                              
+        self._tacts_done += 1
+
+    def _pipeline_can_stop_working(self) -> bool:
+        return (not any([level.is_busy for level in self._levels.values()]) 
+                and not self._vector_1 and not self._vector_2)     
     
     def _add_task(self) -> None:
         if (not self._levels[0].is_busy
@@ -230,19 +229,24 @@ class ArithmeticPipeline:
 
     def _level_steps(self) -> None:
         for pipeline_level in self._levels.values():
-            if not pipeline_level.work_result:
+            if (not pipeline_level.work_result) and pipeline_level.is_busy:                                               
                 pipeline_level.make_step()   
 
-    def _move_pipeline(self) -> None:
+    def _pipeline_cycle(self) -> None:
+        self._add_task()
         self._unload_level_if_possible(self._levels_amount - 1)
-        if self._tacts_done and not self._levels[self._levels_amount - 1].is_busy:                                            
+        if self._tacts_done:
+            self._move_pipeline()                       
+        self._level_steps()
+
+    def _move_pipeline(self) -> None:
+        if not self._levels[self._levels_amount - 1].is_busy:                                            
             previous_operator = self._levels[0].operator
             previous_pair_index = self._pair_indexes[0]            
             self._free_level(0)                                                           
             for index in range(1, self._levels_amount):                                                   
                     self._levels[index].operator, previous_operator = previous_operator, self._levels[index].operator
                     self._pair_indexes[index], previous_pair_index = previous_pair_index, self._pair_indexes[index]
-        self._add_task()                    
         
     def _save_level_result(self, index) -> None:
         free_level = self._levels[index]
@@ -259,7 +263,7 @@ class ArithmeticPipeline:
             self._save_level_result(index)                                       
             self._free_level(index)                    
     
-    def _become_free(self):
+    def _become_free(self):        
         self._busy = False
     
     @property

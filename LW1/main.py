@@ -26,7 +26,7 @@ def test_multiplication():
 
 def test_pipeline():
     configs = Configs()
-    pipeline = ArithmeticPipeline([47], [51],
+    pipeline = ArithmeticPipeline([63], [63],
                                   configs.pipeline_levels_amount,
                                   configs.input_numbers_digit_amount)
     while pipeline.is_busy:
