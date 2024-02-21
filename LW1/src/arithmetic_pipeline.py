@@ -1,3 +1,13 @@
+# Метода решения задач в интеллектуальных системах
+# Лабораторная работа №1 Вариант 7
+# Авторы: Заломов Р.А., Готин И.А.
+# Дата: 20.02.24
+# Данный файл содержит реализацию векторного арифметического конвейера,
+# реализующего умножение бинарных чисел, начиная с младшего разряда со сдвигом
+# множимого влево
+
+
+
 from typing import Literal
 from dataclasses import dataclass, field
 import copy
@@ -199,17 +209,12 @@ class ArithmeticPipeline:
 
         self._number_bit_amount: int = number_bit_amount
     
-    def tact(self) -> None:        
-        self._add_task()        
-        if self._levels[self._levels_amount - 1].work_result:
-            self._save_level_result(self._levels_amount - 1)                                       
-            self._free_level(self._levels_amount - 1)            
+    def tact(self) -> None:
         if (not any([level.is_busy for level in self._levels.values()]) 
-            and not self._vector_1 and not self._vector_2):            
+            and not self._vector_1 and not self._vector_2):                        
             self._become_free()
-            return
-        elif self._tacts_done and not self._levels[self._levels_amount - 1].is_busy:
-            self._move_pipeline()
+            return       
+        self._move_pipeline()
         self._level_steps()                                                                              
         self._tacts_done += 1    
     
@@ -226,20 +231,17 @@ class ArithmeticPipeline:
     def _level_steps(self) -> None:
         for pipeline_level in self._levels.values():
             if not pipeline_level.work_result:
-                pipeline_level.make_step()        
-    
+                pipeline_level.make_step()   
+
     def _move_pipeline(self) -> None:
-        first_busy_level = min([index for index, level in self._levels.items()
-                                if level.is_busy])
-        if first_busy_level == self._levels_amount - 1:
-            return                    
-        previous_operator = self._levels[first_busy_level].operator
-        previous_pair_index = self._pair_indexes[first_busy_level]            
-        self._free_level(first_busy_level)                            
-                                                         
-        for index in range(first_busy_level + 1, self._levels_amount):                                                   
-                self._levels[index].operator, previous_operator = previous_operator, self._levels[index].operator
-                self._pair_indexes[index], previous_pair_index = previous_pair_index, self._pair_indexes[index]
+        self._unload_level_if_possible(self._levels_amount - 1)
+        if self._tacts_done and not self._levels[self._levels_amount - 1].is_busy:                                            
+            previous_operator = self._levels[0].operator
+            previous_pair_index = self._pair_indexes[0]            
+            self._free_level(0)                                                           
+            for index in range(1, self._levels_amount):                                                   
+                    self._levels[index].operator, previous_operator = previous_operator, self._levels[index].operator
+                    self._pair_indexes[index], previous_pair_index = previous_pair_index, self._pair_indexes[index]
         self._add_task()                    
         
     def _save_level_result(self, index) -> None:
@@ -250,7 +252,12 @@ class ArithmeticPipeline:
     def _free_level(self, index) -> None:
         free_level = self._levels[index]          
         free_level.free()
-        self._pair_indexes[index] = -1                     
+        self._pair_indexes[index] = -1
+
+    def _unload_level_if_possible(self, index: int) -> None:
+        if self._levels[index].work_result:
+            self._save_level_result(index)                                       
+            self._free_level(index)                    
     
     def _become_free(self):
         self._busy = False
