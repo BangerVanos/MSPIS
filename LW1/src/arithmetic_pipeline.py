@@ -9,8 +9,9 @@
 
 
 from typing import Literal
-from dataclasses import dataclass, field
-import copy
+import json
+import os
+from copy import deepcopy
 
 
 class BinaryNumber:
@@ -186,6 +187,15 @@ class ArithmeticPipelineLevel:
             partial_sum = self._operator.partial_sum.binary
             partial_product = self._operator.partial_product.binary
         return f'Partial sum: {partial_sum} | Partial product: {partial_product}'
+    
+    @property
+    def status(self):
+        return {
+            'partial_sum': (self._operator.partial_sum.binary
+                            if self._operator else None),
+            'partial_product': (self._operator.partial_product.binary
+                                if self._operator else None), 
+        }
 
 
 class ArithmeticPipeline:
@@ -285,5 +295,40 @@ class ArithmeticPipeline:
                               for i, level in self._levels.items()])}\n'
                 f'Result: {self._result_vector}'
                 )
+    
+    @property
+    def status(self) -> dict:
+        return {
+            'is_pipeline_busy': deepcopy(self._busy),
+            'tacts_done': deepcopy(self._tacts_done),
+            'queue_1': deepcopy(self._vector_1[::-1]),
+            'queue_2': deepcopy(self._vector_2[::-1]),
+            'levels_status': {
+                i: {
+                    'pair_index': None if 
+                    (pair_index := self._pair_indexes[i] + 1) == 0 else pair_index,
+                    'status': level.status 
+                }
+                for i, level in deepcopy(list(self._levels.items()))
+            },
+            'result': deepcopy(self._result_vector)
+        }
 
-        
+
+class ArithmeticPipelineToJSON:
+
+    def __init__(self, vector_1: list[int], vector_2: list[int],
+                 levels_amount: int, number_bit_amount: int) -> None:
+        self._pipeline = ArithmeticPipeline(vector_1, vector_2,
+                                            levels_amount,
+                                            number_bit_amount)
+        self._tacts = []
+
+    def to_json(self):
+        while self._pipeline.is_busy:
+            self._tacts.append(self._pipeline.status)
+            self._pipeline.tact()        
+        with open(os.path.realpath(os.path.join(
+            os.path.dirname(__file__), 'pipeline_work.json'
+        )), 'w') as file:
+            json.dump(self._tacts, file, indent=4)     
