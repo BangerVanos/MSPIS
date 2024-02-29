@@ -1,3 +1,11 @@
+# Метода решения задач в интеллектуальных системах
+# Лабораторная работа №1 Вариант 7
+# Авторы: Заломов Р.А., Готин И.А.
+# Дата: 20.02.24
+# Данный файл содержит тестирование функций реализованной
+# системы: сложение, умножение, работа арифметического конвейера 
+
+
 from src.arithmetic_pipeline import BinaryNumber, BinaryMultiplicator, ArithmeticPipeline
 from src.configs import Configs
 
@@ -18,16 +26,14 @@ def test_multiplication():
 
 def test_pipeline():
     configs = Configs()
-    pipeline = ArithmeticPipeline([1, 3, 5, 10, 21, 34, 20], [7, 9, 11, 56, 7, 2, 10],
+    pipeline = ArithmeticPipeline([63], [63],
                                   configs.pipeline_levels_amount,
                                   configs.input_numbers_digit_amount)
     while pipeline.is_busy:
         print(pipeline)
         pipeline.tact()
-    print(pipeline)
-
 
 if __name__ == '__main__':
-    test_addition()
-    test_multiplication()
+    # test_addition()
+    # test_multiplication()
     test_pipeline()
