@@ -273,4 +273,6 @@ class ArithmeticPipeline:
                               f'{level.__str__()}'
                               for i, level in self._levels.items()])}\n'
                 f'Result: {self._result_vector}'
-                )        
+                )
+
+        
