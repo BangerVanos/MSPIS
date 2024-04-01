@@ -1,0 +1,17 @@
+{
+    "MAT_SIZES": {
+        "p": 5,
+        "m": 3,
+        "q": 3
+    },
+    "COMP_TIME": {
+        "ADD_TIME": 1,
+        "SUB_TINE": 1,
+        "MUL_TIME": 2,
+        "DIV_TIME": 3,
+        "CPR_TIME": 3
+    },
+    "PAR_PARAMS": {
+        "MAX_VEC_SIZE": 4
+    }
+}
