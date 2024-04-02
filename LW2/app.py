@@ -1,4 +1,5 @@
-from src import matrix_calculations
+from src.matrix_calculations import MatrixPU
 
 
-print(matrix_calculations.MatrixGenerators.generate_matrices(3, 3, 3))
+matrixpu = MatrixPU({'q': 3, 'p': 2, 'm': 4})
+print(matrixpu.matrix_c)
