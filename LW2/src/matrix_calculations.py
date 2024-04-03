@@ -1,7 +1,17 @@
+# Методы решения задач в интеллектуальных системах
+# Лабораторная работа №2 Вариант 7
+# Авторы: Заломов Р.А., Готин И.А.
+# Дата: 03.04.24
+# Данный файл содержит классы, отвечающие за
+# генерирование матриц, обсчёт матриц, просчёт параметров
+# параллельной и последовательной архитектур
+
+
 import numpy as np
 from numbers import Number
 from typing import Iterable
 from math import ceil, prod
+import numpy as np
 
 
 # /\ = min(x, y)
@@ -75,6 +85,15 @@ class ComputationUnit:
         # Specifying vector size                
         self._PROCS_ELEMS = config.get('PROCS_ELEMS', 4)
 
+        # Tacts done (only sequential architecture)        
+        self._tacts = 0
+
+        # Simulation of parallel tacts
+        self._par_tacts = 0
+
+        # Max Vec Size (in elems)
+        self._MAX_VEC_SIZE = config.get('MAX_VEC_SIZE', 4)
+
         # Average Program Length Numerator
         self._lavg_numerator = 0 
     
@@ -82,21 +101,25 @@ class ComputationUnit:
     def add(self, x: Number, y: Number) -> Number:
         self._used_add += 1
         self._lavg_numerator += 2 * self._ADD_TIME
+        self._tacts += self._ADD_TIME
         return x + y
     
     def sub(self, x: Number, y: Number) -> Number:
         self._used_sub += 1
         self._lavg_numerator += 2 * self._SUB_TIME
+        self._tacts += self._SUB_TIME
         return x - y
     
     def mul(self, x: Number, y: Number) -> Number:
         self._used_mul += 1
         self._lavg_numerator += 2 * self._MUL_TIME
+        self._tacts += self._MUL_TIME
         return x * y
     
     def div(self, x: Number, y: Number) -> Number:
         self._used_div += 1
         self._lavg_numerator += 2 * self._DIV_TIME
+        self._tacts += self._DIV_TIME
         return x / y
 
     def cpr(self, x: Number, y: Number) -> Number:
@@ -105,12 +128,16 @@ class ComputationUnit:
         # -1 - X less that Y
         self._used_cpr += 1
         self._lavg_numerator += 2 * self._CPR_TIME
+        self._tacts += self._CPR_TIME
         if x < y:
             return -1
         elif x == y:
             return 0
         else:
             return 1
+    
+    def add_par_tacts(self, par_tacts: Number) -> None:
+        self._par_tacts += par_tacts  
     
     @property
     def add_time(self) -> Number:
@@ -135,6 +162,18 @@ class ComputationUnit:
     @property
     def procs_elems(self) -> Number:
         return self._PROCS_ELEMS
+
+    @property
+    def vec_size(self) -> Number:
+        return self._MAX_VEC_SIZE
+    
+    @property
+    def tacts(self) -> Number:
+        return self._tacts
+    
+    @property
+    def par_tacts(self) -> Number:
+        return self._par_tacts
     
     @property
     def report(self) -> dict:
@@ -144,7 +183,9 @@ class ComputationUnit:
             'used_mul': self._used_mul,
             'used_div': self._used_div,
             'used_cpr': self._used_cpr,
-            'length_avg': self._lavg_numerator            
+            'length_avg': self._lavg_numerator,
+            # 'seq_tacts': self._tacts,
+            # 'par_tacts': self._par_tacts            
         }
 
 
@@ -207,25 +248,17 @@ class ComputeReport:
     def __init__(self, pu: ComputationUnit) -> None:              
 
         # Need ComputationUnit object to make report
-        self._pu = pu
+        self._pu = pu    
     
     def _count_seq_tacts(self) -> Number:
-        cu_report = self._pu.report
-        return sum([
-            cu_report['used_add'] * self._pu.add_time,
-            cu_report['used_sub'] * self._pu.sub_time,
-            cu_report['used_mul'] * self._pu.mul_time,
-            cu_report['used_div'] * self._pu.div_time,
-            cu_report['used_cpr'] * self._pu.cpr_time
-        ])
+        return self._pu.tacts
     
     def _count_par_tacts(self) -> Number:
-        seq_tacts = self._count_seq_tacts()
-        return int(ceil(seq_tacts / self._pu.procs_elems))
+        return self._pu.par_tacts
     
     def _count_acceleration_coeff(self) -> Number:
-        seq_tacts = self._count_seq_tacts()
-        par_tacts = self._count_par_tacts()
+        seq_tacts = self._pu.tacts
+        par_tacts = self._pu.par_tacts
         return seq_tacts / par_tacts
     
     def _count_efficency(self) -> Number:
@@ -238,6 +271,7 @@ class ComputeReport:
         cu_report = self._pu.report
         seq_tacts = self._count_seq_tacts()
         par_tacts = self._count_par_tacts()
+        print(seq_tacts, par_tacts)
         acceleration_coeff = self._count_acceleration_coeff()
         efficency = self._count_efficency()        
         report = {
@@ -245,7 +279,7 @@ class ComputeReport:
             'par_tacts': par_tacts,
             'acceleration_coeff': acceleration_coeff,
             'efficency': efficency,
-            'length': seq_tacts                               
+            'length': par_tacts                               
         }
         report.update(cu_report)
         return report
@@ -278,22 +312,29 @@ class MatrixPU:
         # on processing unit params (does not include matrices)
         self._reporter: ComputeReport = ComputeReport(self._pu)
 
-    def compute_d(self):
+    def compute_d(self):                
         self._matrix_d = [
             [self._compute_d_elem(i, j)
              for j in range(self._q)]
              for i in range(self._p)
         ]
+                         
     
     def _compute_d_elem(self, i: int, j: int) -> Number:
+        old_tacts = self._pu.tacts
         arr: list[Number] = [
             self._complex_pu.conj(self._matrix_a[i][k],
                                   self._matrix_b[k][j])
             for k in range(self._m)
         ]
-        return self._complex_pu.arr_disj(arr) 
+        
+        arr_disj = self._complex_pu.arr_disj(arr)
+        self._pu.add_par_tacts(ceil((self._pu.tacts - old_tacts) / min(self._pu.vec_size, self._pu.procs_elems)))
+             
+        return arr_disj
     
     def compute_f(self):
+                
         self._matrix_f = [
             [
                 [
@@ -304,8 +345,12 @@ class MatrixPU:
             ]
             for i in range(self._p)
         ]
+                         
 
     def _compute_f_elem(self, i: int, j: int, k: int) -> Number:
+
+        old_tacts = self._pu.tacts
+
         # Get elements for slightly better performance
         aik: Number = self._matrix_a[i][k]
         bkj: Number = self._matrix_b[k][j]
@@ -328,11 +373,15 @@ class MatrixPU:
         t7: Number = self._pu.mul(t1, t5)
         t_right: Number = self._pu.mul(t7, t6)
 
-        return self._pu.add(
-            t_left, t_right
-        )
+        # Final term
+        t = self._pu.add(t_left, t_right)
+
+        self._pu.add_par_tacts(ceil((self._pu.tacts - old_tacts) / min(self._pu.vec_size, self._pu.procs_elems)))
+
+        return t
     
     def compute_c(self):
+               
         if self._matrix_f is None:
             self.compute_f()
         if self._matrix_d is None:
@@ -341,8 +390,12 @@ class MatrixPU:
             [self._compute_c_elem(i, j) for j in range(self._q)]
             for i in range(self._p)
         ]
+                        
     
     def _compute_c_elem(self, i: int, j: int):
+
+        old_tacts = self._pu.tacts 
+
         # Get elements for slightly better performance
         fij: list[Number] = self._matrix_f[i][j]
         gij: Number = self._matrix_g[i][j]
@@ -366,7 +419,12 @@ class MatrixPU:
         t8: Number = self._pu.add(dij, t7)
         t_right: Number = self._pu.mul(t1, t8)
 
-        return self._pu.add(t_left, t_right)
+        # Final term
+        t = self._pu.add(t_left, t_right)
+
+        self._pu.add_par_tacts(ceil((self._pu.tacts - old_tacts) / min(self._pu.vec_size, self._pu.procs_elems)))        
+
+        return t
 
     @property
     def matrix_c(self):
@@ -381,8 +439,8 @@ class MatrixPU:
             self._matrix_b,
             self._matric_e,
             self._matrix_g,
-            self._matrix_d,
-            self._matrix_f
+            # self._matrix_d,
+            # self._matrix_f
         )
 
     @property
@@ -395,7 +453,8 @@ class MatrixPU:
                 'matrix_E': self._matric_e,
                 'matrix_G': self._matrix_g,
                 'matrix_D': self._matrix_d,
-                'matrix_C': self._matrix_c
+                'matrix_F': self._matrix_f,
+                'matrix_C': self._matrix_c,                
             }
     
     @property
@@ -409,7 +468,7 @@ class MatrixPU:
         report.update(
             {
                 'length_avg': lavg,
-                'divergence_coef': divergence_coef,
+                'divergence_coeff': divergence_coef,
                 'rank': prog_rank 
             }
         )
