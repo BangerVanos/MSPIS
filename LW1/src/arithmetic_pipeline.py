@@ -122,7 +122,7 @@ class BinaryMultiplicator:
         self._is_done = False
     
     def make_step(self):
-        if self._shifts_amount < self._needed_shifts:
+        if not self._is_done:
             self._partial_product = (BinaryNumber(0, self._bit_amount),
                                      self._multiplicand)[self._multiplier.vector[-(self._shifts_amount + 1)]]            
             self._partial_sum = self._partial_sum + self._partial_product
@@ -165,13 +165,11 @@ class ArithmeticPipelineLevel:
     
     def free(self):
         self._operator = None
-        self._is_busy = False
-        self._work_result = None
+        self._is_busy = False        
     
     def make_step(self):
-        if self._operator and not self._operator.result:
-            self._operator.make_step()
-            self._work_result = self._operator.result                                            
+        if self._operator and self._operator.result is None:
+            self._operator.make_step()                                                        
     
     @property
     def is_busy(self):        
@@ -179,7 +177,10 @@ class ArithmeticPipelineLevel:
     
     @property
     def work_result(self) -> BinaryNumber | None:
-        return self._work_result
+        if self._operator:
+            return self._operator.result
+        else:
+            return None
 
     def __str__(self) -> str:
         if not self._operator:
@@ -244,21 +245,20 @@ class ArithmeticPipeline:
             if (not pipeline_level.work_result) and pipeline_level.is_busy:                                               
                 pipeline_level.make_step()   
 
-    def _pipeline_cycle(self) -> None:
-        self._add_task()
-        self._unload_level_if_possible(self._levels_amount - 1)
-        if self._tacts_done:
-            self._move_pipeline()                       
+    def _pipeline_cycle(self) -> None:        
+        self._move_pipeline()
+        self._add_task()                              
         self._level_steps()
+        self._unload_level_if_possible(self._levels_amount - 1)        
 
     def _move_pipeline(self) -> None:
         if not self._levels[self._levels_amount - 1].is_busy:                                            
-            previous_operator = self._levels[0].operator
-            previous_pair_index = self._pair_indexes[0]            
-            self._free_level(0)                                                           
+            previous_operator = deepcopy(self._levels[0].operator)
+            previous_pair_index = self._pair_indexes[0]                                                                      
             for index in range(1, self._levels_amount):                                                   
-                    self._levels[index].operator, previous_operator = previous_operator, self._levels[index].operator
-                    self._pair_indexes[index], previous_pair_index = previous_pair_index, self._pair_indexes[index]
+                self._levels[index].operator, previous_operator = deepcopy(previous_operator), deepcopy(self._levels[index].operator)
+                self._pair_indexes[index], previous_pair_index = previous_pair_index, self._pair_indexes[index]
+            self._free_level(0)            
         
     def _save_level_result(self, index) -> None:
         free_level = self._levels[index]
@@ -273,7 +273,7 @@ class ArithmeticPipeline:
     def _unload_level_if_possible(self, index: int) -> None:
         if self._levels[index].work_result:
             self._save_level_result(index)                                       
-            self._free_level(index)                    
+            self._free_level(index)                          
     
     def _become_free(self):        
         self._busy = False

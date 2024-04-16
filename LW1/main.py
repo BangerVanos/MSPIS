@@ -8,6 +8,8 @@
 
 from src.arithmetic_pipeline import BinaryNumber, BinaryMultiplicator, ArithmeticPipeline
 from src.configs import Configs
+from random import randint
+from time import sleep
 
 
 def test_addition():
@@ -36,4 +38,12 @@ def test_pipeline():
 if __name__ == '__main__':
     # test_addition()
     # test_multiplication()
-    test_pipeline()
+    # test_pipeline()
+    vector_1 = [randint(0, 63) for _ in range(15)]
+    vector_2 = [randint(0, 63) for _ in range(15)]
+    par_pipeline = ArithmeticPipeline(vector_1, vector_2, 6, 6)
+    while par_pipeline.is_busy:
+        par_pipeline.tact()
+        # sleep(0.5)
+        # print(par_pipeline.status)
+    print(par_pipeline.status['tacts_done'])
