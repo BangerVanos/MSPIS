@@ -82,7 +82,7 @@ class ComputationUnit:
         self._DIV_TIME = config.get('DIV_TIME', 1)
         self._CPR_TIME = config.get('CPR_TIME', 1)
 
-        # Specifying vector size                
+        # Specifying processing units amount                
         self._PROCS_ELEMS = config.get('PROCS_ELEMS', 4)
 
         # Tacts done (only sequential architecture)        
