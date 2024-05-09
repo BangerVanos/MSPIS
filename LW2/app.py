@@ -5,7 +5,8 @@
 # Данный файл содержит графическую оболочку системы
 
 
-from src.matrix_calculations import MatrixPU
+# from src.matrix_calculations import MatrixPU
+from src.x_matrix_calculations import MatrixPU
 from random import randint
 import streamlit as st
 import pandas as pd
@@ -57,10 +58,10 @@ class MatrixAppView:
                             min_value=1,
                             value=1,
                             key='procs_elems')
-            st.number_input(label='Maximal processed vector size',
-                            min_value=1,
-                            value=1,
-                            key='max_vec_size')
+            # st.number_input(label='Maximal processed vector size',
+            #                 min_value=1,
+            #                 value=1,
+            #                 key='max_vec_size')
             st.button(label='Compute matrices',
                       type='primary',
                       on_click=self._compute_matrices)
@@ -76,7 +77,7 @@ class MatrixAppView:
                      'DIV_TIME': st.session_state.get('div_time', 1),
                      'CPR_TIME': st.session_state.get('cpr_time', 1),
                      'PROCS_ELEMS': st.session_state.get('procs_elems', 1),
-                     'MAX_VEC_SIZE': st.session_state.get('max_vec_size', 4)
+                    #  'MAX_VEC_SIZE': st.session_state.get('max_vec_size', 4)
                      })
         report = matrixpu.report        
         mat_col, stats_col = st.columns([10, 2])

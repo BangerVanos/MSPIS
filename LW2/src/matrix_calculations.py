@@ -122,6 +122,18 @@ class ComputationUnit:
         self._tacts += self._DIV_TIME
         return x / y
 
+    def max(self, x: Number, y: Number) -> Number:
+        self._used_cpr += 1
+        self._lavg_numerator += 2 * self._CPR_TIME
+        self._tacts += self._CPR_TIME
+        return x if x > y else y 
+
+    def min(self, x: Number, y: Number) -> Number:
+        self._used_cpr += 1
+        self._lavg_numerator += 2 * self._CPR_TIME
+        self._tacts += self._CPR_TIME
+        return x if x < y else y
+
     def cpr(self, x: Number, y: Number) -> Number:
         # 1 - X greater that Y
         # 0 - X equals to Y
@@ -199,20 +211,18 @@ class ComplexCU:
     def min(self, *args) -> Number | None:
         if len(args) == 0:
             return None
-        min = args[0]
+        _min = args[0]
         for num in args[1:]:
-            if self._cu.cpr(num, min) == -1:
-                min = num
-        return min
+            _min = self._cu.min(_min, num)
+        return _min
     
     def max(self, *args) -> Number | None:
         if len(args) == 0:
             return None
-        max = args[0]
+        _max = args[0]
         for num in args[1:]:
-            if self._cu.cpr(num, max) == 1:
-                max = num
-        return max
+            _max = self._cu.min(_max, num)
+        return _max
     
     def conj(self, x: Number, y: Number) -> Number:
         return self.min(x, y)
