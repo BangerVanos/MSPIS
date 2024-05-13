@@ -173,11 +173,10 @@ class ComplexCU:
     '''Specified computating unit containing
     complex operations (conjunction, disjunction, implicance)'''
 
-    def __init__(self, proc_amount: int = 1,
-                 config: dict = {}) -> None:
+    def __init__(self, config: dict = {}) -> None:
         self._procs = [ComputationUnit(config) for
-                       _ in range(proc_amount)]
-        self._procs_amount = proc_amount
+                       _ in range(config.get('PROCS_ELEMS', 4))]
+        self._procs_amount = config.get('PROCS_ELEMS', 4)
         
     def add(self, vec_1: Iterable[Number],
             vec_2: Iterable[Number]) -> Iterable[Number]:
@@ -291,7 +290,8 @@ class ComplexCU:
             'par_tacts': par_tacts,
             'acceleration_coeff': seq_tacts / par_tacts,
             'efficency': efficency,
-            'length': seq_tacts
+            'length': seq_tacts,
+            'procs_amount': self._procs_amount
         }
 
 
@@ -403,8 +403,7 @@ class MatrixPU:
         self._matrix_g = matrices['G']
 
         # Assigning computation units
-        self._pu = ComplexCU(config.get('PROCS_ELEMS', 4),
-                             config)
+        self._pu = ComplexCU(config)
         
         self._matrix_c = None
         self._matrix_f = None
