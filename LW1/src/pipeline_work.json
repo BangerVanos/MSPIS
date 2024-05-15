@@ -3,14 +3,16 @@
         "is_pipeline_busy": true,
         "tacts_done": 0,
         "queue_1": [
-            10,
-            11,
-            50
+            63,
+            0,
+            0,
+            52
         ],
         "queue_2": [
-            21,
             63,
-            17
+            0,
+            0,
+            63
         ],
         "levels_status": {
             "0": {
@@ -42,6 +44,13 @@
                 }
             },
             "4": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -55,19 +64,21 @@
         "is_pipeline_busy": true,
         "tacts_done": 1,
         "queue_1": [
-            11,
-            50
+            0,
+            0,
+            52
         ],
         "queue_2": [
-            63,
-            17
+            0,
+            0,
+            63
         ],
         "levels_status": {
             "0": {
                 "pair_index": 1,
                 "status": {
-                    "partial_sum": "000000001010",
-                    "partial_product": "000000001010"
+                    "partial_sum": "000000111111",
+                    "partial_product": "000000111111"
                 }
             },
             "1": {
@@ -92,6 +103,13 @@
                 }
             },
             "4": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -105,24 +123,26 @@
         "is_pipeline_busy": true,
         "tacts_done": 2,
         "queue_1": [
-            50
+            0,
+            52
         ],
         "queue_2": [
-            17
+            0,
+            63
         ],
         "levels_status": {
             "0": {
                 "pair_index": 2,
                 "status": {
-                    "partial_sum": "000000001011",
-                    "partial_product": "000000001011"
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
                 }
             },
             "1": {
                 "pair_index": 1,
                 "status": {
-                    "partial_sum": "000000001010",
-                    "partial_product": "000000000000"
+                    "partial_sum": "000010111101",
+                    "partial_product": "000001111110"
                 }
             },
             "2": {
@@ -140,6 +160,13 @@
                 }
             },
             "4": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -152,28 +179,32 @@
     {
         "is_pipeline_busy": true,
         "tacts_done": 3,
-        "queue_1": [],
-        "queue_2": [],
+        "queue_1": [
+            52
+        ],
+        "queue_2": [
+            63
+        ],
         "levels_status": {
             "0": {
                 "pair_index": 3,
                 "status": {
-                    "partial_sum": "000000110010",
-                    "partial_product": "000000110010"
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
                 }
             },
             "1": {
                 "pair_index": 2,
                 "status": {
-                    "partial_sum": "000000100001",
-                    "partial_product": "000000010110"
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
                 }
             },
             "2": {
                 "pair_index": 1,
                 "status": {
-                    "partial_sum": "000000110010",
-                    "partial_product": "000000101000"
+                    "partial_sum": "000110111001",
+                    "partial_product": "000011111100"
                 }
             },
             "3": {
@@ -184,6 +215,13 @@
                 }
             },
             "4": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -200,34 +238,41 @@
         "queue_2": [],
         "levels_status": {
             "0": {
-                "pair_index": null,
+                "pair_index": 4,
                 "status": {
-                    "partial_sum": null,
-                    "partial_product": null
+                    "partial_sum": "000000110100",
+                    "partial_product": "000000110100"
                 }
             },
             "1": {
                 "pair_index": 3,
                 "status": {
-                    "partial_sum": "000000110010",
+                    "partial_sum": "000000000000",
                     "partial_product": "000000000000"
                 }
             },
             "2": {
                 "pair_index": 2,
                 "status": {
-                    "partial_sum": "000001001101",
-                    "partial_product": "000000101100"
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
                 }
             },
             "3": {
                 "pair_index": 1,
                 "status": {
-                    "partial_sum": "000000110010",
-                    "partial_product": "000000000000"
+                    "partial_sum": "001110110001",
+                    "partial_product": "000111111000"
                 }
             },
             "4": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -251,31 +296,38 @@
                 }
             },
             "1": {
-                "pair_index": null,
+                "pair_index": 4,
                 "status": {
-                    "partial_sum": null,
-                    "partial_product": null
+                    "partial_sum": "000010011100",
+                    "partial_product": "000001101000"
                 }
             },
             "2": {
                 "pair_index": 3,
                 "status": {
-                    "partial_sum": "000000110010",
+                    "partial_sum": "000000000000",
                     "partial_product": "000000000000"
                 }
             },
             "3": {
                 "pair_index": 2,
                 "status": {
-                    "partial_sum": "000010100101",
-                    "partial_product": "000001011000"
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
                 }
             },
             "4": {
                 "pair_index": 1,
                 "status": {
-                    "partial_sum": "000011010010",
-                    "partial_product": "000010100000"
+                    "partial_sum": "011110100001",
+                    "partial_product": "001111110000"
+                }
+            },
+            "5": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
                 }
             }
         },
@@ -302,20 +354,27 @@
                 }
             },
             "2": {
-                "pair_index": 3,
+                "pair_index": 4,
                 "status": {
-                    "partial_sum": "000000110010",
-                    "partial_product": "000000000000"
+                    "partial_sum": "000101101100",
+                    "partial_product": "000011010000"
                 }
             },
             "3": {
-                "pair_index": 2,
+                "pair_index": 3,
                 "status": {
-                    "partial_sum": "000101010101",
-                    "partial_product": "000010110000"
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
                 }
             },
             "4": {
+                "pair_index": 2,
+                "status": {
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -324,7 +383,7 @@
             }
         },
         "result": [
-            210
+            3969
         ]
     },
     {
@@ -355,13 +414,20 @@
                 }
             },
             "3": {
-                "pair_index": 3,
+                "pair_index": 4,
                 "status": {
-                    "partial_sum": "001101010010",
-                    "partial_product": "001100100000"
+                    "partial_sum": "001100001100",
+                    "partial_product": "000110100000"
                 }
             },
             "4": {
+                "pair_index": 3,
+                "status": {
+                    "partial_sum": "000000000000",
+                    "partial_product": "000000000000"
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -370,8 +436,8 @@
             }
         },
         "result": [
-            210,
-            693
+            3969,
+            0
         ]
     },
     {
@@ -409,6 +475,13 @@
                 }
             },
             "4": {
+                "pair_index": 4,
+                "status": {
+                    "partial_sum": "011001001100",
+                    "partial_product": "001101000000"
+                }
+            },
+            "5": {
                 "pair_index": null,
                 "status": {
                     "partial_sum": null,
@@ -417,9 +490,65 @@
             }
         },
         "result": [
-            210,
-            693,
-            850
+            3969,
+            0,
+            0
+        ]
+    },
+    {
+        "is_pipeline_busy": true,
+        "tacts_done": 9,
+        "queue_1": [],
+        "queue_2": [],
+        "levels_status": {
+            "0": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "1": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "2": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "3": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "4": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            },
+            "5": {
+                "pair_index": null,
+                "status": {
+                    "partial_sum": null,
+                    "partial_product": null
+                }
+            }
+        },
+        "result": [
+            3969,
+            0,
+            0,
+            3276
         ]
     }
 ]
