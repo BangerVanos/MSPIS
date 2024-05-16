@@ -90,10 +90,12 @@ class MatrixAppView:
             st.table(pd.DataFrame([report['matrix_E']]))
             st.write('### Matrix G')
             st.table(pd.DataFrame(report['matrix_G']))
-            st.write('### Matrix C (Result matrix)')
-            st.table(pd.DataFrame(report['matrix_C']))
+            st.write('### Matrix D')
+            st.table(pd.DataFrame(report['matrix_D']))
             st.write('### Matrix F')
             st.table(pd.DataFrame(report['matrix_F']))
+            st.write('### Matrix C (Result matrix)')
+            st.table(pd.DataFrame(report['matrix_C']))            
         with stats_col:
             st.metric(label='Tacts of Sequential architecture',
                       value=report['seq_tacts'])

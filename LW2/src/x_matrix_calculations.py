@@ -220,22 +220,46 @@ class ComplexCU:
         return [self._procs[i % self._procs_amount].min(vec_1[i], vec_2[i])
                 for i in range(len(vec_1))]
     
+    # def reduction_add(self, vec: Iterable[Number]) -> Number:
+    #     neutral = 0
+    #     new_vec = vec
+    #     while len(new_vec := [self._procs[ind % self._procs_amount].add(
+    #         new_vec[i], (new_vec[i + 1] if i + 1 < len(new_vec) else neutral)
+    #     ) for ind, i in enumerate(range(0, len(new_vec), 2))]) > 1:
+    #         continue
+    #     return new_vec[0]    
+    
+    # def reduction_mul(self, vec: Iterable[Number]) -> Number:
+    #     neutral = 1
+    #     new_vec = vec
+    #     while len(new_vec := [self._procs[ind % self._procs_amount].mul(
+    #         new_vec[i], (new_vec[i + 1] if i + 1 < len(new_vec) else neutral)
+    #     ) for ind, i in enumerate(range(0, len(new_vec), 2))]) > 1:
+    #         continue
+    #     return new_vec[0]
+    
     def reduction_add(self, vec: Iterable[Number]) -> Number:
         neutral = 0
+        splits = [(vec[i], vec[i + 1] if i + 1 < len(vec) else neutral)
+                  for i in range(0, len(vec), 2)]
         new_vec = vec
-        while len(new_vec := [self._procs[i % self._procs_amount].add(
-            new_vec[i], (new_vec[i + 1] if i + 1 < len(new_vec) else neutral)
-        ) for i in range(0, len(new_vec), 2)]) > 1:
-            continue
-        return new_vec[0]    
+        while len(new_vec) != 1:
+            new_vec = [self._procs[ind % self._procs_amount].add(*split)
+                       for ind, split in enumerate(splits)]
+            splits = [(new_vec[i], new_vec[i + 1] if i + 1 < len(new_vec) else neutral)
+                      for i in range(0, len(new_vec), 2)]
+        return new_vec[0]
     
     def reduction_mul(self, vec: Iterable[Number]) -> Number:
         neutral = 1
+        splits = [(vec[i], vec[i + 1] if i + 1 < len(vec) else neutral)
+                  for i in range(0, len(vec), 2)]
         new_vec = vec
-        while len(new_vec := [self._procs[i % self._procs_amount].mul(
-            new_vec[i], (new_vec[i + 1] if i + 1 < len(new_vec) else neutral)
-        ) for i in range(0, len(new_vec), 2)]) > 1:
-            continue
+        while len(new_vec) != 1:
+            new_vec = [self._procs[ind % self._procs_amount].mul(*split)
+                       for ind, split in enumerate(splits)]
+            splits = [(new_vec[i], new_vec[i + 1] if i + 1 < len(new_vec) else neutral)
+                      for i in range(0, len(new_vec), 2)]            
         return new_vec[0]
     
     def conj(self, vec_1: Iterable[Number],
@@ -254,8 +278,9 @@ class ComplexCU:
         reductions = [self.reduction_mul(elem) for elem in vec]
         return reductions
     
-    def complex_disj(self, vec: Iterable[Iterable[Number]]) -> Iterable[Number]:
-        reductions = [self.reduction_mul(elem) for elem in vec]
+    def complex_disj(self, vec: Iterable[Iterable[Number]]) -> Iterable[Number]:        
+        reductions = [self.reduction_mul(self.sub([1] * len(elem), elem))
+                      for elem in vec]
         return self.sub([1] * len(reductions), reductions)
     
     def cconj(self, vec: Iterable[Iterable[Number]]) -> Iterable[Number]:
@@ -290,7 +315,7 @@ class ComplexCU:
             'par_tacts': par_tacts,
             'acceleration_coeff': seq_tacts / par_tacts,
             'efficency': efficency,
-            'length': seq_tacts,
+            'length': par_tacts,
             'procs_amount': self._procs_amount
         }
     
@@ -317,26 +342,30 @@ class MatrixPU:
         self._matrix_f = None
         self._matrix_d = None
     
-    def compute_d(self):
-        a = list(chain.from_iterable(self._matrix_a)) * self._q
-        b = list(
+    def compute_d(self):        
+        a = list(
             chain.from_iterable(
-                [row * self._p for row in self._matrix_b]
+                [row  * self._q for row in self._matrix_a]
             )
-        )        
-        conj = self._pu.conj(a, b)
+        )
+        b = list(
+            chain.from_iterable(zip(*self._matrix_b))
+        ) * self._p       
+        conj = self._pu.conj(a, b)       
         d = self._pu.cdisj(
             [conj[k:(k + self._m)] for k in range(0, len(conj), self._m)]
-        )
-        self._matrix_d = np.array(d).reshape((self._p, self._q)).tolist()
-    
-    def compute_f(self):
-        a = list(chain.from_iterable(self._matrix_a)) * self._q
-        b = list(
-            chain.from_iterable(
-                [row * self._p for row in self._matrix_b]
-            )
         )        
+        self._matrix_d = np.array(d).reshape((self._p, self._q)).tolist()        
+    
+    def compute_f(self):        
+        a = list(
+            chain.from_iterable(
+                [row  * self._q for row in self._matrix_a]
+            )
+        )
+        b = list(
+            chain.from_iterable(zip(*self._matrix_b))
+        ) * self._p        
         e = self._matrix_e * (self._p * self._q)
 
         # Computing terms because expression is big
@@ -360,20 +389,21 @@ class MatrixPU:
 
         # Final term
         f = self._pu.add(t_left, t_right)
-        self._matrix_f = np.array(f).reshape(self._p, self._q, self._m).tolist()
+        self._matrix_f = np.array(f).reshape(self._p, self._q, self._m).tolist()        
     
     def compute_c(self):
         if self._matrix_f is None:
             self.compute_f()
         if self._matrix_d is None:
             self.compute_d()
+        
         f: Iterable[Iterable[Number]] = list(chain.from_iterable(self._matrix_f))
         d: Iterable[Number] = list(chain.from_iterable(self._matrix_d))
         g: Iterable[Number] = list(chain.from_iterable(self._matrix_g))
 
         # Computing terms because expression is big
-        # Left part
-        t1: Iterable[Number] = self._pu.cconj(f)
+        # Left part        
+        t1: Iterable[Number] = self._pu.cconj(f)        
         t2: Iterable[Number] = self._pu.sub(self._pu.mul([3] * len(g), g), [2] * len(g))
         t3: Iterable[Number] = self._pu.mul(t1, t2)
         t_left: Iterable[Number] = self._pu.sub(t3, g)
@@ -391,7 +421,7 @@ class MatrixPU:
 
         # Final term
         c = self._pu.add(t_left, t_right)
-        self._matrix_c = np.array(c).reshape((self._p, self._q)).tolist()
+        self._matrix_c = np.array(c).reshape((self._p, self._q)).tolist()        
     
     @property
     def matrix_c(self):
