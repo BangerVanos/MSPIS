@@ -118,6 +118,15 @@ class LRNN:
         self.W_dec = normalize_weights(self.W_dec)
         self.W_enc = normalize_weights(self.W_enc)
     
+    def squared_error(self, y_true, y_predicted) -> float:
+        error = 0
+        y_true, y_predicted = np.array(y_true)[0], np.array(y_predicted)[0]
+        if len(y_true) != len(y_predicted):
+            raise ValueError('True and predicted vectors must be same size!')
+        for i in range(len(y_true)):
+            error += (y_true[i] - y_predicted[i]) ** 2
+        return error
+    
     def train(self, data, epochs=1000, max_loss: float = 100, learn_by_loss: bool = False):
         for epoch in range(epochs):
             self.epoch += 1
@@ -125,8 +134,10 @@ class LRNN:
             for x in data:                
                 x = np.matrix(x)
                 _, x_reconstructed = self.forward(x)
-                self.backward(x, x_reconstructed)
-                total_loss += np.sum(np.array(x - x_reconstructed) ** 2) # Put into loop
+                self.backward(x, x_reconstructed)            
+            for x in data:
+                _, x_reconstructed = self.forward(x)
+                total_loss += self.squared_error(x, x_reconstructed)
             print(f'Epoch {epoch+1}/{epochs}, Loss: {total_loss}')            
             if learn_by_loss and total_loss <= max_loss:
                 break            
