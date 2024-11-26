@@ -90,14 +90,17 @@ def normalize_weights(weights):
 def linear_activation(x):
     return x
 
+
 class LRNN:
     def __init__(self, input_dim, latent_dim, learning_rate=0.001):        
         self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.learning_rate = learning_rate        
         
-        self.W_enc = normalize_weights(np.random.rand(self.input_dim, self.latent_dim))
-        self.W_dec = normalize_weights(np.random.rand(self.latent_dim, self.input_dim))
+        self.W_enc = (normalize_weights(np.random.rand(self.input_dim, self.latent_dim))
+                      .astype(np.float16))
+        self.W_dec = (normalize_weights(np.random.rand(self.latent_dim, self.input_dim))
+                      .astype(np.float16))        
 
         self.epoch: int = 0
     
@@ -109,8 +112,8 @@ class LRNN:
     def backward(self, x, x_reconstructed):
         error = x_reconstructed - x        
         
-        dW_enc = (x.T @ error) @ self.W_dec.T
-        dW_dec = (x @ self.W_enc).T @ error               
+        dW_dec = (x @ self.W_enc).T @ error
+        dW_enc = (x.T @ error) @ self.W_dec.T                       
         
         self.W_dec -= self.learning_rate * dW_dec
         self.W_enc -= self.learning_rate * dW_enc        
@@ -124,7 +127,7 @@ class LRNN:
         if len(y_true) != len(y_predicted):
             raise ValueError('True and predicted vectors must be same size!')
         for i in range(len(y_true)):
-            error += (y_true[i] - y_predicted[i]) ** 2
+            error += (y_true[i] - y_predicted[i]) * (y_true[i] - y_predicted[i])
         return error
     
     def train(self, data, epochs=1000, max_loss: float = 100, learn_by_loss: bool = False):
@@ -134,19 +137,19 @@ class LRNN:
             for x in data:                
                 x = np.matrix(x)
                 _, x_reconstructed = self.forward(x)
-                self.backward(x, x_reconstructed)            
+                self.backward(x, x_reconstructed)
             for x in data:
                 _, x_reconstructed = self.forward(x)
                 total_loss += self.squared_error(x, x_reconstructed)
             print(f'Epoch {epoch+1}/{epochs}, Loss: {total_loss}')            
             if learn_by_loss and total_loss <= max_loss:
-                break            
+                break                    
 
 
 # Image compression/decompression pipeline
 def compress_image(compression_weights, img_array, channels_amount: int,
                    block_height: int, block_width: int, overlap: float = 0):    
-    normalized = (2.0 * img_array.astype(np.float32) / MAX_RGB_VALUE) - 1.0
+    normalized = (2.0 * img_array.astype(np.float16) / MAX_RGB_VALUE) - 1.0
     blocks = image_to_blocks(normalized, block_height, block_width, overlap)
     blocks = blocks.reshape((len(blocks), block_height * block_width, channels_amount))
     if channels_amount == 3:
