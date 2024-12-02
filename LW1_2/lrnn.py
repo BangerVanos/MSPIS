@@ -92,7 +92,9 @@ def linear_activation(x):
 
 
 class LRNN:
-    def __init__(self, input_dim, latent_dim, learning_rate=0.001):        
+    def __init__(self, input_dim, latent_dim, learning_rate=0.001):
+        np.random.seed(1)
+
         self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.learning_rate = learning_rate        
