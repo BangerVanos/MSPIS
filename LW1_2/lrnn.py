@@ -93,16 +93,16 @@ def linear_activation(x):
 
 class LRNN:
     def __init__(self, input_dim, latent_dim, learning_rate=0.001):
-        np.random.seed(1)
+        # np.random.seed(1)
 
         self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.learning_rate = learning_rate        
         
         self.W_enc = (normalize_weights(np.random.rand(self.input_dim, self.latent_dim))
-                      .astype(np.float16))
+                      .astype(np.float32))
         self.W_dec = (normalize_weights(np.random.rand(self.latent_dim, self.input_dim))
-                      .astype(np.float16))        
+                      .astype(np.float32))        
 
         self.epoch: int = 0
     
@@ -151,7 +151,7 @@ class LRNN:
 # Image compression/decompression pipeline
 def compress_image(compression_weights, img_array, channels_amount: int,
                    block_height: int, block_width: int, overlap: float = 0):    
-    normalized = (2.0 * img_array.astype(np.float16) / MAX_RGB_VALUE) - 1.0
+    normalized = (2.0 * img_array.astype(np.float32) / MAX_RGB_VALUE) - 1.0
     blocks = image_to_blocks(normalized, block_height, block_width, overlap)
     blocks = blocks.reshape((len(blocks), block_height * block_width, channels_amount))
     if channels_amount == 3:
