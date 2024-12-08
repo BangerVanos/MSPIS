@@ -115,7 +115,7 @@ class LRNN:
         error = x_reconstructed - x        
         
         dW_dec = (x @ self.W_enc).T @ error
-        dW_enc = (x.T @ error) @ self.W_dec.T                       
+        dW_enc = x.T @ (error @ self.W_dec.T)                       
         
         self.W_dec -= self.learning_rate * dW_dec
         self.W_enc -= self.learning_rate * dW_enc        
@@ -143,7 +143,9 @@ class LRNN:
             for x in data:
                 _, x_reconstructed = self.forward(x)
                 total_loss += self.squared_error(x, x_reconstructed)
-            print(f'Epoch {epoch+1}/{epochs}, Loss: {total_loss}')            
+            mse = total_loss / len(data)
+            print(f'Epoch {epoch+1}/{epochs}, Loss: {total_loss}')
+            # print(f'MSE: {mse:.6f}')            
             if learn_by_loss and total_loss <= max_loss:
                 break                    
 
