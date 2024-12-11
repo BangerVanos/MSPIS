@@ -132,7 +132,8 @@ class LRNN:
             error += (y_true[i] - y_predicted[i]) * (y_true[i] - y_predicted[i])
         return error
     
-    def train(self, data, epochs=1000, max_loss: float = 100, learn_by_loss: bool = False):
+    def train(self, data, epochs=1000, max_loss: float = 100, learn_by_loss: bool = False,
+              verbosity: int = 1):
         for epoch in range(epochs):
             self.epoch += 1
             total_loss = 0
@@ -144,9 +145,13 @@ class LRNN:
                 _, x_reconstructed = self.forward(x)
                 total_loss += self.squared_error(x, x_reconstructed)
             mse = total_loss / len(data)
-            print(f'Epoch {epoch+1}/{epochs}, Loss: {total_loss}')
-            # print(f'MSE: {mse:.6f}')            
+            if self.epoch % max(verbosity, 1) == 0:
+                print(f'Epoch {epoch+1}/{epochs}, Loss: {total_loss}')
+                print(f'MSE: {mse:.6f}')            
             if learn_by_loss and total_loss <= max_loss:
+                print('TRAINING FINISHED ON:')
+                print(f'Epoch {epoch+1}/{epochs}, Loss: {total_loss}')
+                print(f'MSE: {mse:.6f}')
                 break                    
 
 
