@@ -23,7 +23,7 @@ class Hopfield:
         else:            
             return y_t 
 
-    def train(self, e=1e-6, max_iters=10000):
+    def train(self, e=1e-6, max_iters=10000, verbosity: int = 1):
         '''Hopfield network train using D-projections method.
         Training process continues unless difference between old and new weights is
         small'''
@@ -46,10 +46,14 @@ class Hopfield:
                 # self.w += (x.T @ x) / len(self.images)
             
             # Difference between old and new weights
-            w_diff = np.max(np.absolute(old_w - self.w))           
-            print(f'Epoch {self.epochs}/{max_iters}: ' 
-                  f'max(w{self.epochs} - w{self.epochs - 1}) = {w_diff}')
+            w_diff = np.max(np.absolute(old_w - self.w))
+            if self.epochs % verbosity == 0:           
+                print(f'Epoch {self.epochs}/{max_iters}: ' 
+                    f'max(w{self.epochs} - w{self.epochs - 1}) = {w_diff}')
             if w_diff < e:
+                print('TRAINING FINISHED ON')
+                print(f'Epoch {self.epochs}/{max_iters}: ' 
+                    f'max(w{self.epochs} - w{self.epochs - 1}) = {w_diff}')
                 break
                                                                          
         np.fill_diagonal(self.w, 0)                                
