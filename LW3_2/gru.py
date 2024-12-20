@@ -299,3 +299,75 @@ class GRUModel:
         
         self.W_out -= lr * grads['W_out']
         self.b_out -= lr * grads['b_out']
+    
+    def train(self, x, y, lr: float = 0.01, max_epochs: int = 10000,
+              learn_by_loss: bool = False, max_loss: float = 0.01,
+              verbosity: int = 1000):
+        training_loss, training_mape = 0, 0
+        
+        for epoch in range(max_epochs):
+            # Прямой проход
+            y_pred, h, caches = self.forward(x)
+            loss = mse_loss(y_pred, y)
+            
+            # Обратный проход
+            dy_pred = mse_grad(y_pred, y)
+            grads = self.backward(dy_pred, h, caches, x)
+            
+            # Обновление параметров
+            self.update_parameters(grads, lr)
+            
+            epoch_mape = mape(y, y_pred)
+            if (epoch+1) % verbosity == 0:
+                print(f"Epoch {epoch+1}/{max_epochs}, Loss: {loss:.6f}\nMAPE: {epoch_mape:.6f}")
+
+            if learn_by_loss and epoch_mape <= max_loss:
+                print('TRAINING FINISHED')
+                print(f"Epoch {epoch+1}/{max_epochs}, Loss: {loss:.6f}\nMAPE: {epoch_mape:.6f}")
+                break
+
+            training_loss = loss
+            training_mape = epoch_mape
+        
+        # Return training results
+        return training_loss, training_mape
+
+
+# Fibonacci sequence generator
+def fibonacci_generator(n):
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+
+# Squared num sequence generator
+def squared_generator(n):        
+    for i in range(1, n + 1):
+        yield i**2
+
+
+# Arithmetic progression
+def arithmetic_progression(n, a0, d):
+    for i in range(n):
+        yield a0 + i * d
+
+
+# x = x0 / 2**i sequence generator
+def half_generator(n, fst: float):
+    num = fst
+    for _ in range(n):
+        yield num
+        num /= 2
+
+
+# 1/n sequence generator
+def one_by_n_generator(n):    
+    for i in range(n):
+        yield 1 / (i + 1)
+
+
+# 1, -1, 1, -1, 1,... sequence generator
+def plus_one_minus_one_generator(n):    
+    for i in range(n):        
+        yield 1 if i % 2 == 0 else -1
