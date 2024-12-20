@@ -188,6 +188,7 @@ class GRUModel:
     def __init__(self, input_size, hidden_size, output_size):
         self.cell = GRUCell(input_size, hidden_size)
         self.hidden_size = hidden_size
+        self.output_size = output_size
         
         # Выходной слой: h_T -> y
         limit = np.sqrt(1.0 / hidden_size)
@@ -197,32 +198,35 @@ class GRUModel:
     def forward(self, X):
         """
         X: (seq_length, batch_size, input_size)
-        Возвращает предсказание y_pred и кэш для обратного прохода.
-        y_pred будет рассчитываться по последнему скрытому состоянию.
+        Возвращает предсказание y_pred для каждого временного шага и кэш для обратного прохода.
+        y_pred теперь рассчитывается для всех временных шагов.
         """
         seq_length, batch_size, _ = X.shape
-        h = np.zeros((seq_length, batch_size, self.hidden_size))
-        h_prev = np.zeros((batch_size, self.hidden_size))
+        h = np.zeros((seq_length, batch_size, self.hidden_size))  # Все скрытые состояния
+        y_pred = np.zeros((seq_length, batch_size, self.output_size))  # Предсказания для каждого шага
+        h_prev = np.zeros((batch_size, self.hidden_size))  # Инициализация предыдущего состояния
         caches = []
         
         for t in range(seq_length):
-            h_t, cache_t = self.cell.forward(X[t], h_prev)
+            h_t, cache_t = self.cell.forward(X[t], h_prev)  # Вычисляем скрытое состояние
             h[t] = h_t
             h_prev = h_t
             caches.append(cache_t)
-        
-        # Предсказание по последнему состоянию:
-        y_pred = h[-1] @ self.W_out + self.b_out        
-        
+            
+            # Вычисляем предсказание на текущем временном шаге:
+            y_pred[t] = h_t @ self.W_out + self.b_out
+
         return y_pred, h, caches
+
     
     def backward(self, dy_pred, h, caches, X):
         """
         Выполняем обратный проход по всей последовательности (BPTT).
-        dy_pred: градиент по выходу (на последнем шаге)
+        dy_pred: (seq_length, batch_size, output_size) - градиент по выходу на каждом шаге.
         """
         seq_length, batch_size, _ = X.shape
-        
+
+        # Инициализация градиентов
         dW_z = np.zeros_like(self.cell.W_z)
         dU_z = np.zeros_like(self.cell.U_z)
         db_z = np.zeros_like(self.cell.b_z)
@@ -232,27 +236,24 @@ class GRUModel:
         dW_h = np.zeros_like(self.cell.W_h)
         dU_h = np.zeros_like(self.cell.U_h)
         db_h = np.zeros_like(self.cell.b_h)
-        
+
         dW_out = np.zeros_like(self.W_out)
         db_out = np.zeros_like(self.b_out)
-        
-        dh_prev = np.zeros((batch_size, self.hidden_size))
-        
-        # Градиенты по выходу:
-        # y_pred = h[-1] @ W_out + b_out
-        # dy_pred уже дан
-        dW_out = h[-1].T @ dy_pred        
-        db_out = np.sum(dy_pred, axis=0)
-        
-        # dh_last:
-        dh = dy_pred @ self.W_out.T
-        dh += dh_prev
-        
-        # Обратный проход по слоям GRU
+
+        dh_next = np.zeros((batch_size, self.hidden_size))  # Градиент скрытого состояния для следующего шага
+
+        # Градиенты по выходу (y_pred = h @ W_out + b_out)
         for t in reversed(range(seq_length)):
-            dx_t, dh_prev, grads_cell = self.cell.backward(dh, caches[t])
+            dW_out += h[t].T @ dy_pred[t]
+            db_out += np.sum(dy_pred[t], axis=0)
+
+            # Градиент скрытого состояния через выход
+            dh = dy_pred[t] @ self.W_out.T + dh_next
+
+            # Обратный проход через GRU для текущего временного шага
+            dx_t, dh_next, grads_cell = self.cell.backward(dh, caches[t])
             gW_z, gU_z, gb_z, gW_r, gU_r, gb_r, gW_h, gU_h, gb_h = grads_cell
-            
+
             # Суммируем градиенты
             dW_z += gW_z
             dU_z += gU_z
@@ -263,25 +264,17 @@ class GRUModel:
             dW_h += gW_h
             dU_h += gU_h
             db_h += gb_h
-            
-            # Для следующих шагов:
-            # dh_prev уже обновлен в cell.backward
-            # dx_t мы не используем для обновления, так как вход не обучаем.
-            
-            # Если не последний слой, dh придёт с предыдущей итерации
-            if t > 0:
-                dh = dh_prev
-            else:
-                # Первый шаг последовательности, dh_prev здесь больше не нужен
-                pass
-        
+
+        # Сборка всех градиентов в словарь
         grads = {
             'W_z': dW_z, 'U_z': dU_z, 'b_z': db_z,
             'W_r': dW_r, 'U_r': dU_r, 'b_r': db_r,
             'W_h': dW_h, 'U_h': dU_h, 'b_h': db_h,
             'W_out': dW_out, 'b_out': db_out
         }
+
         return grads
+
 
     def update_parameters(self, grads, lr=0.01):
         # Обновление параметров с помощью простого SGD
@@ -301,37 +294,47 @@ class GRUModel:
         self.b_out -= lr * grads['b_out']
     
     def train(self, x, y, lr: float = 0.01, max_epochs: int = 10000,
-              learn_by_loss: bool = False, max_loss: float = 0.01,
-              verbosity: int = 1000):
+          learn_by_loss: bool = False, max_loss: float = 0.01,
+          verbosity: int = 1000):
+        """
+        Обучение модели по заданным данным.
+        x: (seq_length, batch_size, input_size) - входные данные
+        y: (seq_length, batch_size, output_size) - истинные значения
+        """
         training_loss, training_mape = 0, 0
 
         for epoch in range(max_epochs):
             # Прямой проход
             y_pred, h, caches = self.forward(x)
-            loss = mse_loss(y_pred, y)
+            
+            # Вычисление функции потерь по всем временным шагам
+            loss = mse_loss(y_pred, y)  # y_pred и y имеют размерности (seq_length, batch_size, output_size)
             
             # Обратный проход
-            dy_pred = mse_grad(y_pred, y)
+            dy_pred = mse_grad(y_pred, y)  # Градиент потерь
             grads = self.backward(dy_pred, h, caches, x)
             
             # Обновление параметров
             self.update_parameters(grads, lr)
             
+            # Расчет метрики MAPE (по всем временным шагам)
             epoch_mape = mape(y, y_pred)
-            if (epoch+1) % verbosity == 0:
+            
+            if (epoch + 1) % verbosity == 0:
                 print(f"Epoch {epoch+1}/{max_epochs}, Loss: {loss:.6f}\nMAPE: {epoch_mape:.6f}")
-
-            if learn_by_loss and epoch_mape <= max_loss:                
+            
+            # Условие остановки
+            if learn_by_loss and loss <= max_loss:
                 break
 
             training_loss = loss
             training_mape = epoch_mape
-        
-        # Print training results
+
+        # Итоговые результаты обучения
         print('TRAINING FINISHED')
         print(f"Epoch {epoch+1}/{max_epochs}, Loss: {training_loss:.6f}\nMAPE: {training_mape:.6f}")
 
-        # Return training results
+        # Возврат результатов обучения
         return training_loss, training_mape
 
 
