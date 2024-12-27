@@ -1,76 +1,72 @@
-# Лабораторная работа 3 по дисциплине МРЗвИС
-# Выполнена студентом группы 121702
-# БГУИР Заломов Роман Андреевич
-#
-# Вариант 15: Реализовать модель рекуррентной сети с цепью нейросетевых моделей управляемых рекуррентных блоков 
-# с логарифмической функцией активации (гиперболический арксинус) выходного сигнала на скрытом слое
-#
-# 24.12.24
-# Данный файл содержит реализацию сети GRU
-# с функцией активации arcsinh на скрытом слое
-# Часть исходного кода была взята с: https://pastebin.com/UniAESGy
-
-
 import numpy as np
-
-
-def create_sliding_window_batches(sequence, window_size, batch_size, output_size):
-    X, y = [], []
-    
-    # Формирование данных скользящего окна
-    for i in range(len(sequence) - window_size - output_size + 1):
-        X.append(sequence[i:i + window_size])
-        y.append(sequence[i + window_size:i + window_size + output_size])
-    
-    # Преобразование в массивы numpy
-    X, y = np.array(X), np.array(y)
-
-    # Определение количества батчей
-    total_samples = len(X)
-    batch_amount = int(np.ceil(total_samples / batch_size))
-
-    # Дополнение последнего батча, если данных не хватает
-    if total_samples % batch_size != 0:
-        pad_size = batch_size - (total_samples % batch_size)
-        
-        X_pad = np.repeat(X[-1][np.newaxis, :], pad_size, axis=0)
-        y_pad = np.repeat(y[-1][np.newaxis, :], pad_size, axis=0)
-        
-        X = np.vstack((X, X_pad))
-        y = np.vstack((y, y_pad))
-
-    # Формирование батчей
-    X_batches = X.reshape(batch_amount, batch_size, window_size)
-    y_batches = y.reshape(batch_amount, batch_size, output_size)
-
-    return X_batches, y_batches
 
 
 def arcsinh(x):
     return np.arcsinh(x)
 
-
 def darcsinh(x):
     # Производная arcsinh(x) = 1 / sqrt(x^2 + 1)
     return 1.0 / np.sqrt(x**2 + 1.0)
 
+def tanh(x):
+    return np.tanh(x)
+
+def dtanh(x):
+    # Производная arcsinh(x) = 1 / sqrt(x^2 + 1)
+    return 1.0 - tanh(x) ** 2
 
 def mse_loss(y_pred, y_true):
     return np.mean((y_pred - y_true)**2)
 
-
 def mse_grad(y_pred, y_true):
     return 2 * (y_pred - y_true) / y_pred.size
 
-
 def mape(y_true, y_pred, ignore_zero: bool = True) -> float:
-    if not y_true.shape == y_pred.shape:
-        raise ValueError('y_true and y_pred must have same shape!')    
+    y_true, y_pred = np.array(y_true), np.array(y_pred)        
     if ignore_zero:
-        y_true = y_true[y_true != 0]
-        y_pred = y_pred[y_true != 0]
+        # Avoiding devision by zero       
+        mask = y_true != 0        
+        y_true = y_true[mask]
+        y_pred = y_pred[mask]      
     return np.mean(np.absolute((y_true - y_pred) / y_true))
 
+
+class AdamOptimizer:
+    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
+        self.learning_rate = learning_rate
+        self.beta1 = beta1
+        self.beta2 = beta2
+        self.epsilon = epsilon
+        self.t = 0
+        self.m = {}  # Моменты первого порядка (средние градиентов)
+        self.v = {}  # Моменты второго порядка (средние квадратов градиентов)
+
+    def update(self, param_name, param, grad):
+        """
+        Обновление параметра с использованием Adam.
+        param_name: имя параметра (строка), чтобы различать моменты.
+        param: текущий параметр (матрица/вектор).
+        grad: градиент параметра (той же размерности).
+        """
+        if param_name not in self.m:
+            # Инициализация моментов для нового параметра
+            self.m[param_name] = np.zeros_like(param)
+            self.v[param_name] = np.zeros_like(param)
+
+        self.t += 1  # Увеличение счётчика итераций
+
+        # Обновление моментов
+        self.m[param_name] = self.beta1 * self.m[param_name] + (1 - self.beta1) * grad
+        self.v[param_name] = self.beta2 * self.v[param_name] + (1 - self.beta2) * (grad ** 2)
+
+        # Коррекция смещения
+        m_hat = self.m[param_name] / (1 - self.beta1 ** self.t)
+        v_hat = self.v[param_name] / (1 - self.beta2 ** self.t)
+
+        # Обновление параметра
+        param -= self.learning_rate * m_hat / (np.sqrt(v_hat) + self.epsilon)
+        return param
+    
 
 class GRUCell:
     def __init__(self, input_size, hidden_size):
@@ -202,7 +198,7 @@ class GRUCell:
         return dx_t, dh_prev, (dW_z, dU_z, db_z, dW_r, dU_r, db_r, dW_h, dU_h, db_h)
 
 
-class GRUModel:
+class GRUAdam:
     def __init__(self, input_size, hidden_size, output_size):
         self.cell = GRUCell(input_size, hidden_size)
         self.hidden_size = hidden_size
@@ -211,7 +207,7 @@ class GRUModel:
         # Выходной слой: h_T -> y
         limit = np.sqrt(1.0 / hidden_size)
         self.W_out = np.random.uniform(-limit, limit, (hidden_size, output_size))
-        self.b_out = np.zeros(output_size)
+        self.b_out = np.zeros(output_size)        
         
     def forward(self, X):
         """
@@ -294,22 +290,28 @@ class GRUModel:
         return grads
 
 
-    def update_parameters(self, grads, lr=0.01):
-        # Обновление параметров с помощью простого SGD
-        self.cell.W_z -= lr * grads['W_z']
-        self.cell.U_z -= lr * grads['U_z']
-        self.cell.b_z -= lr * grads['b_z']
-        
-        self.cell.W_r -= lr * grads['W_r']
-        self.cell.U_r -= lr * grads['U_r']
-        self.cell.b_r -= lr * grads['b_r']
-        
-        self.cell.W_h -= lr * grads['W_h']
-        self.cell.U_h -= lr * grads['U_h']
-        self.cell.b_h -= lr * grads['b_h']
-        
-        self.W_out -= lr * grads['W_out']
-        self.b_out -= lr * grads['b_out']
+    def update_parameters(self, grads, optimizer):
+        """
+        Обновление параметров с использованием AdamOptimizer.
+        grads: словарь с градиентами.
+        optimizer: объект AdamOptimizer.
+        """
+        # Обновление параметров
+        self.cell.W_z = optimizer.update("W_z", self.cell.W_z, grads['W_z'])
+        self.cell.U_z = optimizer.update("U_z", self.cell.U_z, grads['U_z'])
+        self.cell.b_z = optimizer.update("b_z", self.cell.b_z, grads['b_z'])
+
+        self.cell.W_r = optimizer.update("W_r", self.cell.W_r, grads['W_r'])
+        self.cell.U_r = optimizer.update("U_r", self.cell.U_r, grads['U_r'])
+        self.cell.b_r = optimizer.update("b_r", self.cell.b_r, grads['b_r'])
+
+        self.cell.W_h = optimizer.update("W_h", self.cell.W_h, grads['W_h'])
+        self.cell.U_h = optimizer.update("U_h", self.cell.U_h, grads['U_h'])
+        self.cell.b_h = optimizer.update("b_h", self.cell.b_h, grads['b_h'])
+
+        self.W_out = optimizer.update("W_out", self.W_out, grads['W_out'])
+        self.b_out = optimizer.update("b_out", self.b_out, grads['b_out'])
+
     
     def train(self, x, y, lr: float = 0.01, max_epochs: int = 10000,
           learn_by_loss: bool = False, max_loss: float = 0.01,
@@ -320,6 +322,7 @@ class GRUModel:
         y: (seq_length, batch_size, output_size) - истинные значения
         """
         training_loss, training_mape = 0, 0
+        optimizer = AdamOptimizer(learning_rate=lr)
 
         for epoch in range(max_epochs):
             # Прямой проход
@@ -332,81 +335,26 @@ class GRUModel:
             dy_pred = mse_grad(y_pred, y)  # Градиент потерь
             grads = self.backward(dy_pred, h, caches, x)
             
-            # Обновление параметров
-            self.update_parameters(grads, lr)
+            # Обновление параметров            
+            self.update_parameters(grads, optimizer)
             
-            # Расчет метрики MAPE (по всем временным шагам)
+            # Расчет метрики MAPE (по всем временным шагам)            
             epoch_mape = mape(y, y_pred)
             
             if (epoch + 1) % verbosity == 0:
-                print(f"Epoch {epoch+1}/{max_epochs}, Loss: {loss:.6f}\nMAPE: {epoch_mape:.6f}")
+                print(f"Epoch {epoch+1}/{max_epochs}, Loss: {loss:.6f}\nMAPE: {epoch_mape * 100:.6f}%")
             
             # Условие остановки
             if learn_by_loss and loss <= max_loss:
                 break
-
-        y_pred, _, _ = self.forward(x)
+        
+        y_pred, _, _ = self.forward(x)        
         training_loss = mse_loss(y_pred, y)
         training_mape = mape(y, y_pred)
 
         # Итоговые результаты обучения
         print('TRAINING FINISHED')
-        print(f"Epoch {epoch+1}/{max_epochs}, Loss: {training_loss:.6f}\nMAPE: {training_mape:.6f}")
+        print(f"Epoch {epoch+1}/{max_epochs}, Loss: {training_loss:.6f}\nMAPE: {training_mape * 100:.6f}%")
 
         # Возврат результатов обучения
         return training_loss, training_mape
-
-
-# Fibonacci sequence generator
-def fibonacci_generator(n):
-    a, b = 0, 1
-    for _ in range(n):
-        yield a
-        a, b = b, a + b
-
-
-# Squared num sequence generator
-def squared_generator(n):        
-    for i in range(1, n + 1):
-        yield i**2
-
-
-# Arithmetic progression
-def arithmetic_progression(n, a0, d):
-    for i in range(n):
-        yield a0 + i * d
-
-
-# x = x0 / 2**i sequence generator
-def half_generator(n, fst: float):
-    num = fst
-    for _ in range(n):
-        yield num
-        num /= 2
-
-
-# 1/n sequence generator
-def one_by_n_generator(n):    
-    for i in range(n):
-        yield 1 / (i + 1)
-
-
-# 1, -1, 1, -1, 1,... sequence generator
-def plus_one_minus_one_generator(n):    
-    for i in range(n):        
-        yield 1 if i % 2 == 0 else -1
-
-
-# 1, 0, 1, 0, 0, 1, 0, 0, 0, 1,... sequence generator
-def one_half_generator(n):
-    count = 1
-    generated = 0
-    while generated < n:
-        generated += 1
-        yield 1
-        for _ in range(count):
-            if generated >= n:
-                break
-            generated += 1
-            yield 0.5            
-        count += 1
