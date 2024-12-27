@@ -424,7 +424,7 @@ def one_half_generator(n):
         count += 1
 
 
-# alpha * sin(alpha * x + omega) generator
+# alpha * sin(beta * x + omega) generator
 def sin_generator(n, alpha=1, beta=1, omega=1):    
     for i in range(n):        
         yield alpha * sin(beta * i + omega)
