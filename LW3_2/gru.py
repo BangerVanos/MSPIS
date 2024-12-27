@@ -12,6 +12,7 @@
 
 
 import numpy as np
+from math import sin
 
 
 def create_sliding_window_batches(sequence, window_size, batch_size, output_size):
@@ -64,12 +65,23 @@ def mse_grad(y_pred, y_true):
 
 
 def mape(y_true, y_pred, ignore_zero: bool = True) -> float:
-    if not y_true.shape == y_pred.shape:
-        raise ValueError('y_true and y_pred must have same shape!')    
+    y_true, y_pred = np.array(y_true), np.array(y_pred)        
     if ignore_zero:
-        y_true = y_true[y_true != 0]
-        y_pred = y_pred[y_true != 0]
+        # Avoiding devision by zero       
+        mask = y_true != 0        
+        y_true = y_true[mask]
+        y_pred = y_pred[mask]      
     return np.mean(np.absolute((y_true - y_pred) / y_true))
+
+
+def smape(y_true, y_pred, ingnore_zero: bool = True) -> float:
+    numerator = np.abs(y_true - y_pred)
+    denominator = (np.abs(y_true) + np.abs(y_pred)) / 2
+    if ingnore_zero:
+        mask = denominator != 0
+        numerator = numerator[mask]
+        denominator = denominator[mask]
+    return np.mean(numerator / denominator)
 
 
 class GRUCell:
@@ -410,3 +422,9 @@ def one_half_generator(n):
             generated += 1
             yield 0.5            
         count += 1
+
+
+# alpha * sin(alpha * x + omega) generator
+def sin_generator(n, alpha=1, beta=1, omega=1):    
+    for i in range(n):        
+        yield alpha * sin(beta * i + omega)
