@@ -64,6 +64,14 @@ def mse_grad(y_pred, y_true):
     return 2 * (y_pred - y_true) / y_pred.size
 
 
+def mse_loss(y_pred, y_true):
+    return  1 / 2 * np.mean((y_pred - y_true)**2)
+
+
+def mse_grad(y_pred, y_true):
+    return (y_pred - y_true) / y_pred.size
+
+
 def mape(y_true, y_pred, ignore_zero: bool = True) -> float:
     y_true, y_pred = np.array(y_true), np.array(y_pred)        
     if ignore_zero:
