@@ -56,30 +56,28 @@ def darcsinh(x):
     return 1.0 / np.sqrt(x**2 + 1.0)
 
 
-def mse_loss(y_pred, y_true):
-    return np.mean((y_pred - y_true)**2)
+def sse_loss(y_pred, y_true):
+    return np.sum((y_true - y_pred) ** 2)
+
+
+def mse_loss(y_pred, y_true):    
+    return 1/2 * np.mean((y_true - y_pred) ** 2)    
 
 
 def mse_grad(y_pred, y_true):
-    return 2 * (y_pred - y_true) / y_pred.size
+    return (y_pred - y_true) / y_true.size
 
 
-def mse_loss(y_pred, y_true):
-    return  1 / 2 * np.mean((y_pred - y_true)**2)
-
-
-def mse_grad(y_pred, y_true):
-    return (y_pred - y_true) / y_pred.size
-
-
-def mape(y_true, y_pred, ignore_zero: bool = True) -> float:
+def mape(y_true, y_pred, ignore_zero: bool = True,
+         return_percents: bool = False) -> float:
     y_true, y_pred = np.array(y_true), np.array(y_pred)        
     if ignore_zero:
         # Avoiding devision by zero       
         mask = y_true != 0        
         y_true = y_true[mask]
         y_pred = y_pred[mask]      
-    return np.mean(np.absolute((y_true - y_pred) / y_true))
+    return (np.mean(np.absolute((y_true - y_pred) / y_true)) * 
+            (100 if return_percents else 1))
 
 
 def smape(y_true, y_pred, ingnore_zero: bool = True) -> float:
@@ -331,9 +329,12 @@ class GRUModel:
         self.W_out -= lr * grads['W_out']
         self.b_out -= lr * grads['b_out']
     
-    def train(self, x, y, lr: float = 0.01, max_epochs: int = 10000,
-          learn_by_loss: bool = False, max_loss: float = 0.01,
-          verbosity: int = 1000):
+    def train(self, x, y,
+              lr: float = 0.01,
+              max_epochs: int = 10000,
+              learn_until_target_loss: bool = False,
+              target_loss: float = 0.01,
+              verbosity: int = 1000):
         """
         Обучение модели по заданным данным.
         x: (seq_length, batch_size, input_size) - входные данные
@@ -349,29 +350,29 @@ class GRUModel:
             loss = mse_loss(y_pred, y)  # y_pred и y имеют размерности (seq_length, batch_size, output_size)
             
             # Обратный проход
-            dy_pred = mse_grad(y_pred, y)  # Градиент потерь
+            dy_pred = mse_grad(y_pred, y)  # Градиент потерь            
             grads = self.backward(dy_pred, h, caches, x)
             
             # Обновление параметров
             self.update_parameters(grads, lr)
             
-            # Расчет метрики MAPE (по всем временным шагам)
+            # Расчет метрики MAPE (по всем временным шагам)            
             epoch_mape = mape(y, y_pred)
             
             if (epoch + 1) % verbosity == 0:
-                print(f"Epoch {epoch+1}/{max_epochs}, Loss: {loss:.6f}\nMAPE: {epoch_mape:.6f}")
+                print(f"Epoch {epoch+1}/{max_epochs}, Loss: {loss:.6f}\nMAPE: {epoch_mape * 100:.6f}%")
             
             # Условие остановки
-            if learn_by_loss and loss <= max_loss:
+            if learn_until_target_loss and loss <= target_loss:
                 break
-
-        y_pred, _, _ = self.forward(x)
+        
+        y_pred, _, _ = self.forward(x)        
         training_loss = mse_loss(y_pred, y)
         training_mape = mape(y, y_pred)
 
         # Итоговые результаты обучения
         print('TRAINING FINISHED')
-        print(f"Epoch {epoch+1}/{max_epochs}, Loss: {training_loss:.6f}\nMAPE: {training_mape:.6f}")
+        print(f"Epoch {epoch+1}/{max_epochs}, Loss: {training_loss:.6f}\nMAPE: {training_mape * 100:.6f}%")
 
         # Возврат результатов обучения
         return training_loss, training_mape
